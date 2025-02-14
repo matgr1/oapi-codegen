@@ -1,8 +1,10 @@
 package codegen
 
 import (
+	"os"
 	"testing"
 
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -452,5 +454,41 @@ func TestProperty_GoTypeDef_nullable(t *testing.T) {
 			}
 			assert.Equal(t, tt.want, p.GoTypeDef())
 		})
+	}
+}
+
+func TestSwagger(t *testing.T) {
+	swagger, err := util.LoadSwagger("schema_test.yaml")
+	if err != nil {
+		t.Fatalf("error loading swagger: %v", err)
+		return
+	}
+	if swagger == nil || swagger.Info == nil || swagger.Info.Version == "" {
+		t.Error("missing data")
+		return
+	}
+
+	config := Configuration{
+		PackageName: "codegen",
+		Generate: GenerateOptions{
+			Models: true,
+			// Client:       true,
+			// GinServer:    true,
+			// EmbeddedSpec: true,
+		},
+		OutputOptions: OutputOptions{
+			SkipPrune: true,
+		},
+	}
+	code, err := Generate(swagger, config)
+	if err != nil {
+		t.Errorf("error generating code: %s\n", err)
+		return
+	}
+
+	err = os.WriteFile("schema_test_generated.not-go", []byte(code), 0644)
+	if err != nil {
+		t.Errorf("error writing output: %s\n", err)
+		return
 	}
 }
